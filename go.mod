@@ -2,7 +2,9 @@ module github.com/BarchDif/stm-like-api
 
 go 1.17
 
+
 require (
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
