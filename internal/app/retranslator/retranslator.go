@@ -1,6 +1,7 @@
 package retranslator
 
 import (
+	"context"
 	"github.com/BarchDif/stm-like-api/internal/app/consumer"
 	"github.com/BarchDif/stm-like-api/internal/app/producer"
 	"github.com/BarchDif/stm-like-api/internal/app/repo"
@@ -11,8 +12,9 @@ import (
 )
 
 type Retranslator interface {
-	Start()
-	Close()
+	Start(ctx context.Context)
+	Stop()
+	Stopped() <-chan interface{}
 }
 
 type Config struct {
@@ -30,14 +32,16 @@ type Config struct {
 }
 
 type retranslator struct {
-	events     chan model.SubdomainEvent
+	events     chan streaming.LikeEvent
+	stopped    chan interface{}
 	consumer   consumer.Consumer
 	producer   producer.Producer
-	workerPool *workerpool.WorkerPool
+	workerPool workerpool.WorkerPool
 }
 
 func NewRetranslator(cfg Config) Retranslator {
-	events := make(chan model.SubdomainEvent, cfg.ChannelSize)
+	events := make(chan streaming.LikeEvent, cfg.ChannelSize)
+	stopped := make(chan interface{}, 1)
 	workerPool := workerpool.New(cfg.WorkerCount)
 
 	consumer := consumer.NewDbConsumer(
@@ -48,25 +52,42 @@ func NewRetranslator(cfg Config) Retranslator {
 		events)
 	producer := producer.NewKafkaProducer(
 		cfg.ProducerCount,
+		cfg.Repo,
 		cfg.Sender,
 		events,
 		workerPool)
 
 	return &retranslator{
 		events:     events,
+		stopped:    stopped,
 		consumer:   consumer,
 		producer:   producer,
 		workerPool: workerPool,
 	}
 }
 
-func (r *retranslator) Start() {
-	r.producer.Start()
-	r.consumer.Start()
+func (r *retranslator) Start(ctx context.Context) {
+	cancelCtx, _ := context.WithCancel(ctx)
+
+	r.producer.Start(cancelCtx)
+	r.consumer.Start(cancelCtx)
+	r.workerPool.Start(cancelCtx)
+
+	go func() {
+		<-ctx.Done()
+
+		r.Stop()
+	}()
 }
 
-func (r *retranslator) Close() {
-	r.consumer.Close()
-	r.producer.Close()
-	r.workerPool.StopWait()
+func (r *retranslator) Stop() {
+	<-r.consumer.Cancel()
+	<-r.producer.Cancel()
+	<-r.workerPool.StopWait()
+
+	r.stopped <- struct{}{}
+}
+
+func (r *retranslator) Stopped() <-chan interface{} {
+	return r.stopped
 }

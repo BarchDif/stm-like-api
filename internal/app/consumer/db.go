@@ -1,6 +1,9 @@
 package consumer
 
+//go:generate mockgen -destination=../../mocks/consumer_mock.go -package=mocks github.com/BarchDif/stm-like-api/internal/app/consumer Consumer
+
 import (
+	"context"
 	"github.com/BarchDif/stm-like-api/internal/app/repo"
 	"github.com/BarchDif/stm-like-api/internal/model"
 	"sync"
@@ -8,26 +11,28 @@ import (
 )
 
 type Consumer interface {
-	Start()
-	Close()
+	Start(ctx context.Context)
+	Cancel() <-chan bool
 }
 
 type consumer struct {
 	n      uint64
-	events chan<- model.SubdomainEvent
+	events chan<- streaming.LikeEvent
 
 	repo repo.EventRepo
 
 	batchSize uint64
 	timeout   time.Duration
 
-	done chan bool
-	wg   *sync.WaitGroup
+	done      chan bool
+	cancel    func()
+	cancelled chan bool
+	wg        *sync.WaitGroup
 }
 
 type Config struct {
 	n         uint64
-	events    chan<- model.SubdomainEvent
+	events    chan<- streaming.LikeEvent
 	repo      repo.EventRepo
 	batchSize uint64
 	timeout   time.Duration
@@ -38,10 +43,11 @@ func NewDbConsumer(
 	batchSize uint64,
 	consumeTimeout time.Duration,
 	repo repo.EventRepo,
-	events chan<- model.SubdomainEvent) Consumer {
+	events chan<- streaming.LikeEvent) Consumer {
 
 	wg := &sync.WaitGroup{}
 	done := make(chan bool)
+	stopped := make(chan bool)
 
 	return &consumer{
 		n:         n,
@@ -51,16 +57,21 @@ func NewDbConsumer(
 		events:    events,
 		wg:        wg,
 		done:      done,
+		cancelled: stopped,
 	}
 }
 
-func (c *consumer) Start() {
+func (c *consumer) Start(ctx context.Context) {
+	childContext, stopFunc := context.WithCancel(ctx)
+	c.cancel = stopFunc
+
 	for i := uint64(0); i < c.n; i++ {
 		c.wg.Add(1)
 
 		go func() {
 			defer c.wg.Done()
 			ticker := time.NewTicker(c.timeout)
+			defer ticker.Stop()
 			for {
 				select {
 				case <-ticker.C:
@@ -71,15 +82,26 @@ func (c *consumer) Start() {
 					for _, event := range events {
 						c.events <- event
 					}
-				case <-c.done:
+				case <-childContext.Done():
 					return
 				}
 			}
 		}()
 	}
+
+	go c.waitCancellation()
 }
 
-func (c *consumer) Close() {
-	close(c.done)
+func (c *consumer) Cancel() <-chan bool {
+	c.cancel()
+
+	return c.cancelled
+}
+
+func (c *consumer) waitCancellation() {
 	c.wg.Wait()
+
+	close(c.events)
+
+	c.cancelled <- true
 }
