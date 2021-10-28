@@ -1,6 +1,5 @@
-package consumer
-
 //go:generate mockgen -destination=../../mocks/consumer_mock.go -package=mocks github.com/BarchDif/stm-like-api/internal/app/consumer Consumer
+package consumer
 
 import (
 	"context"
@@ -12,7 +11,7 @@ import (
 
 type Consumer interface {
 	Start(ctx context.Context)
-	Cancel() <-chan bool
+	Cancel() <-chan struct{}
 }
 
 type consumer struct {
@@ -24,9 +23,9 @@ type consumer struct {
 	batchSize uint64
 	timeout   time.Duration
 
-	done      chan bool
+	done      chan struct{}
 	cancel    func()
-	cancelled chan bool
+	cancelled chan struct{}
 	wg        *sync.WaitGroup
 }
 
@@ -46,8 +45,8 @@ func NewDbConsumer(
 	events chan<- streaming.LikeEvent) Consumer {
 
 	wg := &sync.WaitGroup{}
-	done := make(chan bool)
-	stopped := make(chan bool)
+	done := make(chan struct{})
+	stopped := make(chan struct{})
 
 	return &consumer{
 		n:         n,
@@ -72,8 +71,11 @@ func (c *consumer) Start(ctx context.Context) {
 			defer c.wg.Done()
 			ticker := time.NewTicker(c.timeout)
 			defer ticker.Stop()
+
 			for {
 				select {
+				case <-childContext.Done():
+					return
 				case <-ticker.C:
 					events, err := c.repo.Lock(c.batchSize)
 					if err != nil {
@@ -82,8 +84,6 @@ func (c *consumer) Start(ctx context.Context) {
 					for _, event := range events {
 						c.events <- event
 					}
-				case <-childContext.Done():
-					return
 				}
 			}
 		}()
@@ -92,7 +92,7 @@ func (c *consumer) Start(ctx context.Context) {
 	go c.waitCancellation()
 }
 
-func (c *consumer) Cancel() <-chan bool {
+func (c *consumer) Cancel() <-chan struct{} {
 	c.cancel()
 
 	return c.cancelled
@@ -103,5 +103,5 @@ func (c *consumer) waitCancellation() {
 
 	close(c.events)
 
-	c.cancelled <- true
+	c.cancelled <- struct{}{}
 }

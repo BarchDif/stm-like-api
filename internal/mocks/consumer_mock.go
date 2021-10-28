@@ -34,18 +34,18 @@ func (m *MockConsumer) EXPECT() *MockConsumerMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
-func (m *MockConsumer) Close() <-chan bool {
+// Cancel mocks base method.
+func (m *MockConsumer) Cancel() <-chan struct{} {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(<-chan bool)
+	ret := m.ctrl.Call(m, "Cancel")
+	ret0, _ := ret[0].(<-chan struct{})
 	return ret0
 }
 
-// Close indicates an expected call of Close.
-func (mr *MockConsumerMockRecorder) Close() *gomock.Call {
+// Cancel indicates an expected call of Cancel.
+func (mr *MockConsumerMockRecorder) Cancel() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockConsumer)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cancel", reflect.TypeOf((*MockConsumer)(nil).Cancel))
 }
 
 // Start mocks base method.
