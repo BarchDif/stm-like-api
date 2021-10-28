@@ -35,10 +35,10 @@ func (m *MockProducer) EXPECT() *MockProducerMockRecorder {
 }
 
 // Cancel mocks base method.
-func (m *MockProducer) Cancel() <-chan bool {
+func (m *MockProducer) Cancel() <-chan struct{} {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Cancel")
-	ret0, _ := ret[0].(<-chan bool)
+	ret0, _ := ret[0].(<-chan struct{})
 	return ret0
 }
 

@@ -20,11 +20,11 @@ type Retranslator interface {
 type Config struct {
 	ChannelSize uint64
 
-	ConsumerCount  uint64
+	ConsumerCount  int
 	ConsumeSize    uint64
 	ConsumeTimeout time.Duration
 
-	ProducerCount uint64
+	ProducerCount int
 	WorkerCount   int
 
 	Repo   repo.EventRepo
@@ -37,6 +37,8 @@ type retranslator struct {
 	consumer   consumer.Consumer
 	producer   producer.Producer
 	workerPool workerpool.WorkerPool
+
+	cancel func()
 }
 
 func NewRetranslator(cfg Config) Retranslator {
@@ -67,14 +69,15 @@ func NewRetranslator(cfg Config) Retranslator {
 }
 
 func (r *retranslator) Start(ctx context.Context) {
-	cancelCtx, _ := context.WithCancel(ctx)
+	cancelCtx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
 
-	r.producer.Start(cancelCtx)
-	r.consumer.Start(cancelCtx)
-	r.workerPool.Start(cancelCtx)
+	r.producer.Start(context.Background())
+	r.consumer.Start(context.Background())
+	r.workerPool.Start(context.Background())
 
 	go func() {
-		<-ctx.Done()
+		<-cancelCtx.Done()
 
 		r.Stop()
 	}()
@@ -86,8 +89,11 @@ func (r *retranslator) Stop() {
 	<-r.workerPool.StopWait()
 
 	r.stopped <- struct{}{}
+	close(r.stopped)
 }
 
 func (r *retranslator) Stopped() <-chan interface{} {
+	r.cancel()
+
 	return r.stopped
 }

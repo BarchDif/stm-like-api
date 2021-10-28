@@ -5,6 +5,7 @@ import (
 	"github.com/BarchDif/stm-like-api/internal/app/producer"
 	"github.com/BarchDif/stm-like-api/internal/app/repo"
 	"github.com/BarchDif/stm-like-api/internal/app/sender"
+	"github.com/BarchDif/stm-like-api/internal/app/workerpool"
 	"github.com/BarchDif/stm-like-api/internal/mocks"
 	streaming "github.com/BarchDif/stm-like-api/internal/model"
 	"github.com/golang/mock/gomock"
@@ -13,26 +14,19 @@ import (
 	"testing"
 )
 
-type TestFixture interface {
-	ConsumerMock(setup func(*mocks.MockConsumer)) consumer.Consumer
-	ProducerMock(func(*mocks.MockProducer)) producer.Producer
-	LikeRepoMock(*sync.Mutex, map[uint64]int) repo.EventRepo
-	EventSenderMock(func(*mocks.MockEventSender)) sender.EventSender
-}
-
-type fixture struct {
+type TestFixture struct {
 	controller *gomock.Controller
 }
 
 func NewFixture(t *testing.T) TestFixture {
 	controller := gomock.NewController(t)
 
-	return &fixture{
+	return TestFixture{
 		controller: controller,
 	}
 }
 
-func (f fixture) ConsumerMock(setup func(*mocks.MockConsumer)) consumer.Consumer {
+func (f TestFixture) ConsumerMock(setup func(*mocks.MockConsumer)) consumer.Consumer {
 	consumer := mocks.NewMockConsumer(f.controller)
 
 	if setup != nil {
@@ -42,7 +36,7 @@ func (f fixture) ConsumerMock(setup func(*mocks.MockConsumer)) consumer.Consumer
 	return consumer
 }
 
-func (f fixture) ProducerMock(setup func(*mocks.MockProducer)) producer.Producer {
+func (f TestFixture) ProducerMock(setup func(*mocks.MockProducer)) producer.Producer {
 	producer := mocks.NewMockProducer(f.controller)
 
 	if setup != nil {
@@ -52,7 +46,17 @@ func (f fixture) ProducerMock(setup func(*mocks.MockProducer)) producer.Producer
 	return producer
 }
 
-func (f fixture) LikeRepoMock(mu *sync.Mutex, match map[uint64]int) repo.EventRepo {
+func (f TestFixture) LikeRepoMock(setup func(eventRepo *mocks.MockEventRepo)) repo.EventRepo {
+	eventRepo := mocks.NewMockEventRepo(f.controller)
+
+	if setup != nil {
+		setup(eventRepo)
+	}
+
+	return eventRepo
+}
+
+func (f TestFixture) LikeRepoLockMock(mu *sync.Mutex, match map[uint64]int) repo.EventRepo {
 	repo := mocks.NewMockEventRepo(f.controller)
 
 	repo.
@@ -84,7 +88,33 @@ func (f fixture) LikeRepoMock(mu *sync.Mutex, match map[uint64]int) repo.EventRe
 	return repo
 }
 
-func (f fixture) EventSenderMock(setup func(*mocks.MockEventSender)) sender.EventSender {
+func (f TestFixture) LikeRepoUnlockRemoveMock(unlockResult chan streaming.LikeEvent, removeResult chan streaming.LikeEvent) repo.EventRepo {
+	repo := mocks.NewMockEventRepo(f.controller)
+
+	repo.
+		EXPECT().
+		Unlock(gomock.AssignableToTypeOf([]uint64{})).
+		MaxTimes(cap(unlockResult)).
+		Do(func(id []uint64) {
+			for i := 0; i < len(id); i++ {
+				unlockResult <- streaming.LikeEvent{ID: id[i]}
+			}
+		})
+
+	repo.
+		EXPECT().
+		Remove(gomock.AssignableToTypeOf([]uint64{})).
+		MaxTimes(cap(unlockResult)).
+		Do(func(id []uint64) {
+			for i := 0; i < len(id); i++ {
+				removeResult <- streaming.LikeEvent{ID: id[i]}
+			}
+		})
+
+	return repo
+}
+
+func (f TestFixture) EventSenderMock(setup func(*mocks.MockEventSender)) sender.EventSender {
 	sender := mocks.NewMockEventSender(f.controller)
 
 	if setup != nil {
@@ -92,4 +122,35 @@ func (f fixture) EventSenderMock(setup func(*mocks.MockEventSender)) sender.Even
 	}
 
 	return sender
+}
+
+func (f TestFixture) EventSenderSendMock(result chan streaming.LikeEvent) sender.EventSender {
+	sender := mocks.NewMockEventSender(f.controller)
+
+	sender.
+		EXPECT().
+		Send(gomock.AssignableToTypeOf(&streaming.LikeEvent{})).
+		Times(cap(result)).
+		DoAndReturn(func(event *streaming.LikeEvent) error {
+			result <- *event
+
+			return nil
+		})
+
+	return sender
+}
+
+func (f TestFixture) WorkerPoolSubmitMock() workerpool.WorkerPool {
+	pool := mocks.NewMockWorkerPool(f.controller)
+
+	var function func() error
+	pool.
+		EXPECT().
+		Submit(gomock.AssignableToTypeOf(function)).
+		AnyTimes().
+		Do(func(f func() error) {
+			f()
+		})
+
+	return pool
 }

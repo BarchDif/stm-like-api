@@ -105,14 +105,9 @@ func (pool *simpleWorkerPool) Start(ctx context.Context) {
 	}()
 
 	go func() {
-		pool.wg.Add(1)
-		defer pool.wg.Done()
-
 		<-childContext.Done()
 		close(pool.tasks)
-	}()
 
-	go func() {
 		pool.wg.Wait()
 
 		pool.cancelled <- true
