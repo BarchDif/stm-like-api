@@ -14,11 +14,11 @@ import (
 
 type Producer interface {
 	Start(ctx context.Context)
-	Cancel() <-chan bool
+	Cancel() <-chan struct{}
 }
 
 type producer struct {
-	n       uint64
+	n       int
 	timeout time.Duration
 
 	repo repo.EventRepo
@@ -35,12 +35,12 @@ type producer struct {
 	senderWaitGroup *sync.WaitGroup
 	batcherMutex    *sync.Mutex
 	cancel          func()
-	cancelled       chan bool
+	cancelled       chan struct{}
 	isCancelled     bool
 }
 
 func NewKafkaProducer(
-	n uint64,
+	n int,
 	repo repo.EventRepo,
 	sender sender.EventSender,
 	events chan streaming.LikeEvent,
@@ -48,7 +48,7 @@ func NewKafkaProducer(
 ) Producer {
 	wg := new(sync.WaitGroup)
 	batcherMutex := new(sync.Mutex)
-	cancelled := make(chan bool)
+	cancelled := make(chan struct{})
 
 	formBatch := make(chan streaming.LikeEvent, n)
 	processedBatch := make([]streaming.LikeEvent, 0, n)
@@ -73,7 +73,7 @@ func (p *producer) Start(ctx context.Context) {
 	childContext, cancelFunc := context.WithCancel(ctx)
 	p.cancel = cancelFunc
 
-	for i := uint64(0); i < p.n; i++ {
+	for i := 0; i < p.n; i++ {
 		p.senderWaitGroup.Add(1)
 
 		go func() {
@@ -103,7 +103,7 @@ func (p *producer) Start(ctx context.Context) {
 	go p.waitCancellation()
 }
 
-func (p *producer) Cancel() <-chan bool {
+func (p *producer) Cancel() <-chan struct{} {
 	p.cancel()
 
 	return p.cancelled
@@ -116,12 +116,13 @@ func (p *producer) waitCancellation() {
 	p.batcherMutex.Lock()
 	defer p.batcherMutex.Unlock()
 
-	p.cancelled <- true
+	p.cancelled <- struct{}{}
 	close(p.cancelled)
 }
 
 func (p *producer) handleEventSending(event *streaming.LikeEvent) {
-	if err := p.sender.Send(event); err != nil {
+	err := p.sender.Send(event)
+	if err != nil {
 		event.Status = streaming.Deferred
 	} else {
 		event.Status = streaming.Processed
@@ -160,20 +161,21 @@ func (p *producer) handleBatches(ctx context.Context) {
 			p.dispatchEvent(event)
 		}
 
-		if uint64(len(p.processedBatch)) == p.n {
+		if len(p.processedBatch) == p.n {
 			p.submitBatch(&p.processedBatch)
 		}
 
-		if uint64(len(p.deferredBatch)) == p.n {
+		if len(p.deferredBatch) == p.n {
 			p.submitBatch(&p.deferredBatch)
 		}
 	}
 }
 
 func (p *producer) dispatchEvent(event streaming.LikeEvent) {
-	if event.Status == streaming.Processed {
+	switch event.Status {
+	case streaming.Processed:
 		p.processedBatch = append(p.processedBatch, event)
-	} else {
+	case streaming.Deferred:
 		p.deferredBatch = append(p.deferredBatch, event)
 	}
 }
@@ -182,17 +184,28 @@ func (p *producer) submitBatch(eventBatchPtr *[]streaming.LikeEvent) {
 	eventBatch := *eventBatchPtr
 	batchSize := int(math.Min(float64(p.n), float64(len(eventBatch))))
 
+	eventStatus := eventBatch[0].Status
+
 	idBatch := make([]uint64, batchSize)
 	for i := 0; i < batchSize; i++ {
 		idBatch[i] = eventBatch[i].ID
 	}
 	prevLen := len(eventBatch)
-	copy(*eventBatchPtr, eventBatch[batchSize:])
+	copy(eventBatch, eventBatch[batchSize:])
 	*eventBatchPtr = eventBatch[:prevLen-batchSize]
 
-	p.workerPool.Submit(func() error {
-		err := p.repo.Unlock(idBatch)
+	switch eventStatus {
+	case streaming.Processed:
+		p.workerPool.Submit(func() error {
+			err := p.repo.Remove(idBatch)
 
-		return err
-	})
+			return err
+		})
+	case streaming.Deferred:
+		p.workerPool.Submit(func() error {
+			err := p.repo.Unlock(idBatch)
+
+			return err
+		})
+	}
 }

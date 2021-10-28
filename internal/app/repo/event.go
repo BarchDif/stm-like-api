@@ -7,6 +7,13 @@ import (
 )
 
 type EventRepo interface {
+	// Пример запроса на sqlite
+	//	select min(Id) as EventId
+	//	from LikeEvent
+	//	group by LikeId
+	//	having max(case Status when 'locked' then 1 else 0 end) = 0
+	//	order by EventId
+	//	limit 5
 	Lock(n uint64) ([]streaming.LikeEvent, error)
 	Unlock(eventIDs []uint64) error
 
