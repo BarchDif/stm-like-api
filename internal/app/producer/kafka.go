@@ -1,3 +1,4 @@
+//go:generate mockgen -destination=../../mocks/producer_mock.go -package=mocks github.com/BarchDif/stm-like-api/internal/app/producer Producer
 package producer
 
 import (

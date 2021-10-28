@@ -1,13 +1,14 @@
+//go:generate mockgen -destination=../../mocks/pool_mock.go -package=mocks github.com/BarchDif/stm-like-api/internal/app/workerpool WorkerPool
+
 package workerpool
 
 import (
 	"context"
 	"github.com/google/uuid"
+	"log"
 	"sync"
 	"time"
 )
-
-//go:generate mockgen -destination=../../mocks/pool_mock.go -package=mocks github.com/BarchDif/stm-like-api/internal/app/workerpool WorkerPool
 
 const maxRetryCount = 5
 
@@ -142,6 +143,8 @@ func (pool *simpleWorkerPool) handleRetry(retry *retryableTask) {
 	}
 
 	if retry.retryAttempts > maxRetryCount {
+		log.Print("Exceeded retry count for task ", retry.id)
+
 		pool.deleteById(retry.id)
 	}
 }
