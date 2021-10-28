@@ -35,5 +35,4 @@ func main() {
 	case <-retranslator.Stopped():
 	case <-shutdownCtx.Done():
 	}
-
 }
