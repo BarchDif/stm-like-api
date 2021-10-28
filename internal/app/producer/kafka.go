@@ -36,7 +36,6 @@ type producer struct {
 	batcherMutex    *sync.Mutex
 	cancel          func()
 	cancelled       chan struct{}
-	isCancelled     bool
 }
 
 func NewKafkaProducer(

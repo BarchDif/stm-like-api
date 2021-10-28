@@ -7,7 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	model "github.com/BarchDif/stm-like-api/internal/model"
+	streaming "github.com/BarchDif/stm-like-api/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,7 +35,7 @@ func (m *MockEventRepo) EXPECT() *MockEventRepoMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockEventRepo) Add(arg0 []model.LikeEvent) error {
+func (m *MockEventRepo) Add(arg0 []streaming.LikeEvent) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
 	ret0, _ := ret[0].(error)
@@ -49,10 +49,10 @@ func (mr *MockEventRepoMockRecorder) Add(arg0 interface{}) *gomock.Call {
 }
 
 // Lock mocks base method.
-func (m *MockEventRepo) Lock(arg0 uint64) ([]model.LikeEvent, error) {
+func (m *MockEventRepo) Lock(arg0 uint64) ([]streaming.LikeEvent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Lock", arg0)
-	ret0, _ := ret[0].([]model.LikeEvent)
+	ret0, _ := ret[0].([]streaming.LikeEvent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

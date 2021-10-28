@@ -15,7 +15,7 @@ const maxRetryCount = 5
 type WorkerPool interface {
 	Submit(func() error)
 	Start(context.Context)
-	StopWait() chan bool
+	StopWait() chan struct{}
 }
 
 type simpleWorkerPool struct {
@@ -25,7 +25,7 @@ type simpleWorkerPool struct {
 	retryList   []retryableTask
 
 	cancel    func()
-	cancelled chan bool
+	cancelled chan struct{}
 }
 
 type retryableTask struct {
@@ -37,7 +37,7 @@ type retryableTask struct {
 func New(workerCount int) WorkerPool {
 	wg := new(sync.WaitGroup)
 	tasks := make(chan func() error, workerCount*2)
-	cancelled := make(chan bool)
+	cancelled := make(chan struct{})
 	retryList := make([]retryableTask, 0)
 
 	return &simpleWorkerPool{
@@ -110,7 +110,7 @@ func (pool *simpleWorkerPool) Start(ctx context.Context) {
 
 		pool.wg.Wait()
 
-		pool.cancelled <- true
+		pool.cancelled <- struct{}{}
 		close(pool.cancelled)
 	}()
 }
@@ -165,7 +165,7 @@ func (pool *simpleWorkerPool) deleteById(id uuid.UUID) {
 	pool.retryList = append(pool.retryList[:i], pool.retryList[i+1:]...)
 }
 
-func (pool *simpleWorkerPool) StopWait() chan bool {
+func (pool *simpleWorkerPool) StopWait() chan struct{} {
 	pool.cancel()
 
 	return pool.cancelled

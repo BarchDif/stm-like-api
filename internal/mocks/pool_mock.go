@@ -47,10 +47,10 @@ func (mr *MockWorkerPoolMockRecorder) Start(arg0 interface{}) *gomock.Call {
 }
 
 // StopWait mocks base method.
-func (m *MockWorkerPool) StopWait() chan bool {
+func (m *MockWorkerPool) StopWait() chan struct{} {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StopWait")
-	ret0, _ := ret[0].(chan bool)
+	ret0, _ := ret[0].(chan struct{})
 	return ret0
 }
 
