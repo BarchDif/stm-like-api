@@ -10,8 +10,6 @@ import (
 )
 
 func main() {
-	rootContext := context.Background()
-	cancelCtx, cancelFunc := context.WithCancel(rootContext)
 	sigs := make(chan os.Signal, 1)
 
 	cfg := retranslator.Config{
@@ -23,14 +21,13 @@ func main() {
 	}
 
 	retranslator := retranslator.NewRetranslator(cfg)
-	retranslator.Start(cancelCtx)
+	retranslator.Start(context.Background())
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigs
-	cancelFunc()
 
-	shutdownCtx, _ := context.WithTimeout(rootContext, time.Second)
+	shutdownCtx, _ := context.WithTimeout(context.Background(), time.Second)
 	select {
 	case <-retranslator.Stopped():
 	case <-shutdownCtx.Done():
