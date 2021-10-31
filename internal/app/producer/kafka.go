@@ -32,8 +32,8 @@ type producer struct {
 	processedBatch []streaming.LikeEvent
 	deferredBatch  []streaming.LikeEvent
 
-	senderWaitGroup *sync.WaitGroup
-	batcherMutex    *sync.Mutex
+	senderWaitGroup sync.WaitGroup
+	batcherMutex    sync.Mutex
 	cancel          func()
 	cancelled       chan struct{}
 }
@@ -45,8 +45,8 @@ func NewKafkaProducer(
 	events chan streaming.LikeEvent,
 	workerPool workerpool.WorkerPool,
 ) Producer {
-	wg := new(sync.WaitGroup)
-	batcherMutex := new(sync.Mutex)
+	wg := sync.WaitGroup{}
+	batcherMutex := sync.Mutex{}
 	cancelled := make(chan struct{})
 
 	formBatch := make(chan streaming.LikeEvent, n)

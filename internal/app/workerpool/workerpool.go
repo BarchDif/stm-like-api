@@ -19,7 +19,7 @@ type WorkerPool interface {
 }
 
 type simpleWorkerPool struct {
-	wg          *sync.WaitGroup
+	wg          sync.WaitGroup
 	workerCount int
 	tasks       chan func() error
 	retryList   []retryableTask
@@ -35,7 +35,7 @@ type retryableTask struct {
 }
 
 func New(workerCount int) WorkerPool {
-	wg := new(sync.WaitGroup)
+	wg := sync.WaitGroup{}
 	tasks := make(chan func() error, workerCount*2)
 	cancelled := make(chan struct{})
 	retryList := make([]retryableTask, 0)
