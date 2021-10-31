@@ -26,7 +26,7 @@ type consumer struct {
 	done      chan struct{}
 	cancel    func()
 	cancelled chan struct{}
-	wg        *sync.WaitGroup
+	wg        sync.WaitGroup
 }
 
 type Config struct {
@@ -44,7 +44,7 @@ func NewDbConsumer(
 	repo repo.EventRepo,
 	events chan<- streaming.LikeEvent) Consumer {
 
-	wg := &sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	done := make(chan struct{})
 	stopped := make(chan struct{})
 
