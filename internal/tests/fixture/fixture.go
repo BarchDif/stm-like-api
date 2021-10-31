@@ -143,10 +143,9 @@ func (f TestFixture) EventSenderSendMock(result chan streaming.LikeEvent) sender
 func (f TestFixture) WorkerPoolSubmitMock() workerpool.WorkerPool {
 	pool := mocks.NewMockWorkerPool(f.controller)
 
-	var function func() error
 	pool.
 		EXPECT().
-		Submit(gomock.AssignableToTypeOf(function)).
+		Submit(gomock.Any()).
 		AnyTimes().
 		Do(func(f func() error) {
 			f()
