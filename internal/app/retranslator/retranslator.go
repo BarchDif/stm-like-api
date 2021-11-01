@@ -25,10 +25,10 @@ type Config struct {
 	ConsumeTimeout time.Duration
 
 	ProducerCount int
-	WorkerCount   int
 
 	Repo   repo.EventRepo
 	Sender sender.EventSender
+	Pool   workerpool.WorkerPool
 }
 
 type retranslator struct {
@@ -44,7 +44,7 @@ type retranslator struct {
 func NewRetranslator(cfg Config) Retranslator {
 	events := make(chan streaming.LikeEvent, cfg.ChannelSize)
 	stopped := make(chan interface{}, 1)
-	workerPool := workerpool.New(cfg.WorkerCount)
+	//workerPool := workerpool.New(cfg.WorkerCount)
 
 	consumer := consumer.NewDbConsumer(
 		cfg.ConsumerCount,
@@ -57,14 +57,14 @@ func NewRetranslator(cfg Config) Retranslator {
 		cfg.Repo,
 		cfg.Sender,
 		events,
-		workerPool)
+		cfg.Pool)
 
 	return &retranslator{
 		events:     events,
 		stopped:    stopped,
 		consumer:   consumer,
 		producer:   producer,
-		workerPool: workerPool,
+		workerPool: cfg.Pool,
 	}
 }
 
