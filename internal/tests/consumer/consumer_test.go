@@ -3,68 +3,81 @@ package consumer_test
 import (
 	"context"
 	"github.com/BarchDif/stm-like-api/internal/app/consumer"
+	"github.com/BarchDif/stm-like-api/internal/app/repo"
+	"github.com/BarchDif/stm-like-api/internal/mocks"
 	"github.com/BarchDif/stm-like-api/internal/model"
-	"github.com/BarchDif/stm-like-api/internal/tests/fixture"
-	"sync"
+	"github.com/golang/mock/gomock"
 	"testing"
 	"time"
 )
 
 const (
-	consumerCount = 3
-	batchSize     = 3
+	consumerCount  = 2
+	batchSize      = 3
+	consumeTimeout = time.Millisecond * 100
 )
 
-func startNewConsumer(t *testing.T) (consumer.Consumer, chan streaming.LikeEvent, map[uint64]int, *sync.Mutex) {
-	testFixture := fixture.NewFixture(t)
-
-	match := make(map[uint64]int)
-	mu := new(sync.Mutex)
-
-	repo := testFixture.LikeRepoLockMock(mu, match)
-	resultChannel := make(chan streaming.LikeEvent, batchSize*consumerCount)
-
-	consumer := consumer.NewDbConsumer(consumerCount, batchSize, time.Millisecond*10, repo, resultChannel)
-	ctx, _ := context.WithCancel(context.Background())
-	consumer.Start(ctx)
-
-	return consumer, resultChannel, match, mu
+var testData = struct {
+	batch1 []streaming.LikeEvent
+	batch2 []streaming.LikeEvent
+}{
+	batch1: []streaming.LikeEvent{
+		{ID: 10},
+		{ID: 11},
+		{ID: 12},
+	},
+	batch2: []streaming.LikeEvent{
+		{ID: 20},
+		{ID: 21},
+		{ID: 22},
+	},
 }
 
-// Checks if all generated events consumed once
+func oneOfTestData(event streaming.LikeEvent) bool {
+	for _, testEvent := range testData.batch1 {
+		if event == testEvent {
+			return true
+		}
+	}
+
+	for _, testEvent := range testData.batch2 {
+		if event == testEvent {
+			return true
+		}
+	}
+
+	return false
+}
+
+func createRepoMock(t *testing.T) *mocks.MockEventRepo {
+	ctrl := gomock.NewController(t)
+	repoMock := mocks.NewMockEventRepo(ctrl)
+
+	return repoMock
+}
+
+func setupConsumer(repoMock repo.EventRepo) (consumer.Consumer, chan streaming.LikeEvent) {
+	events := make(chan streaming.LikeEvent, consumerCount*batchSize)
+	consumer := consumer.NewDbConsumer(consumerCount, batchSize, consumeTimeout, repoMock, events)
+
+	return consumer, events
+}
+
 func TestConsumer_EventsReceiving(t *testing.T) {
-	consumer, resultChannel, match, mu := startNewConsumer(t)
+	repoMock := createRepoMock(t)
 
-	time.Sleep(time.Millisecond * 100)
-	consumer.Cancel()
+	repoMock.EXPECT().Lock(uint64(batchSize)).Return(testData.batch1, nil)
+	repoMock.EXPECT().Lock(uint64(batchSize)).Return(testData.batch2, nil)
 
-	if len(resultChannel) == 0 {
-		t.Fail()
+	consumer, result := setupConsumer(repoMock)
 
-		return
-	}
-
-	for event := range resultChannel {
-		mu.Lock()
-
-		count, ok := match[event.ID]
-		if !ok || count != 0 {
-			t.Fail()
-
-			return
-		}
-
-		match[event.ID]++
-		mu.Unlock()
-	}
-
-	for _, value := range match {
-		if value != 1 {
-			t.Fail()
-
-			return
-		}
-	}
-
+	consumer.Start(context.Background())
+	time.Sleep(consumeTimeout)
 	<-consumer.Cancel()
+
+	for event := range result {
+		if !oneOfTestData(event) {
+			t.Fail()
+		}
+	}
 }
