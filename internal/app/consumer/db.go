@@ -23,7 +23,6 @@ type consumer struct {
 	batchSize uint64
 	timeout   time.Duration
 
-	done      chan struct{}
 	cancel    func()
 	cancelled chan struct{}
 	wg        sync.WaitGroup
@@ -45,8 +44,7 @@ func NewDbConsumer(
 	events chan<- streaming.LikeEvent) Consumer {
 
 	wg := sync.WaitGroup{}
-	done := make(chan struct{})
-	stopped := make(chan struct{})
+	cancelled := make(chan struct{}, 1)
 
 	return &consumer{
 		n:         n,
@@ -55,8 +53,7 @@ func NewDbConsumer(
 		repo:      repo,
 		events:    events,
 		wg:        wg,
-		done:      done,
-		cancelled: stopped,
+		cancelled: cancelled,
 	}
 }
 
@@ -101,7 +98,8 @@ func (c *consumer) Cancel() <-chan struct{} {
 func (c *consumer) waitCancellation() {
 	c.wg.Wait()
 
-	close(c.events)
-
 	c.cancelled <- struct{}{}
+
+	close(c.events)
+	close(c.cancelled)
 }

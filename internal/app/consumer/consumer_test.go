@@ -1,12 +1,12 @@
-package consumer_test
+package consumer
 
 import (
 	"context"
-	"github.com/BarchDif/stm-like-api/internal/app/consumer"
 	"github.com/BarchDif/stm-like-api/internal/app/repo"
 	"github.com/BarchDif/stm-like-api/internal/mocks"
 	"github.com/BarchDif/stm-like-api/internal/model"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -33,22 +33,6 @@ var testData = struct {
 	},
 }
 
-func oneOfTestData(event streaming.LikeEvent) bool {
-	for _, testEvent := range testData.batch1 {
-		if event == testEvent {
-			return true
-		}
-	}
-
-	for _, testEvent := range testData.batch2 {
-		if event == testEvent {
-			return true
-		}
-	}
-
-	return false
-}
-
 func createRepoMock(t *testing.T) *mocks.MockEventRepo {
 	ctrl := gomock.NewController(t)
 	repoMock := mocks.NewMockEventRepo(ctrl)
@@ -56,28 +40,33 @@ func createRepoMock(t *testing.T) *mocks.MockEventRepo {
 	return repoMock
 }
 
-func setupConsumer(repoMock repo.EventRepo) (consumer.Consumer, chan streaming.LikeEvent) {
+func setupConsumer(repoMock repo.EventRepo) (Consumer, chan streaming.LikeEvent) {
 	events := make(chan streaming.LikeEvent, consumerCount*batchSize)
-	consumer := consumer.NewDbConsumer(consumerCount, batchSize, consumeTimeout, repoMock, events)
+	consumer := NewDbConsumer(consumerCount, batchSize, consumeTimeout, repoMock, events)
 
 	return consumer, events
 }
 
-func TestConsumer_EventsReceiving(t *testing.T) {
+func chanToSlice(in chan streaming.LikeEvent) []streaming.LikeEvent {
+	result := make([]streaming.LikeEvent, 0)
+
+	for event := range in {
+		result = append(result, event)
+	}
+
+	return result
+}
+
+func TestConsumer_AllEventsConsumed(t *testing.T) {
+	a := assert.New(t)
 	repoMock := createRepoMock(t)
+	consumer, result := setupConsumer(repoMock)
 
 	repoMock.EXPECT().Lock(uint64(batchSize)).Return(testData.batch1, nil)
 	repoMock.EXPECT().Lock(uint64(batchSize)).Return(testData.batch2, nil)
 
-	consumer, result := setupConsumer(repoMock)
+	ctx, _ := context.WithTimeout(context.Background(), consumeTimeout)
+	consumer.Start(ctx)
 
-	consumer.Start(context.Background())
-	time.Sleep(consumeTimeout)
-	<-consumer.Cancel()
-
-	for event := range result {
-		if !oneOfTestData(event) {
-			t.Fail()
-		}
-	}
+	a.ElementsMatch(append(testData.batch1, testData.batch2...), chanToSlice(result))
 }
