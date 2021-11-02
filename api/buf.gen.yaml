@@ -25,9 +25,9 @@ plugins:
       - lang=go
     strategy: directory
 
-  - name: openapiv2
-    path: protoc-gen-openapiv2
-    out: swagger
-    opt:
-      - generate_unbound_methods=true
-    strategy: directory
+#  - name: openapiv2
+#    path: protoc-gen-openapiv2
+#    out: swagger
+#    opt:
+#      - generate_unbound_methods=true
+#    strategy: directory
