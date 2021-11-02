@@ -3,7 +3,7 @@ syntax = "proto3";
 package BarchDif.stm_like_api.v1;
 
 //import "api/validate/validate.proto";
-import "api/google/api/annotations.proto";
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/BarchDif/stm-like-api/pkg/stm-like-api;stm_like_api";
