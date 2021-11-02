@@ -1,33 +1,50 @@
 syntax = "proto3";
 
-package ozonmp.omp_template_api.v1;
+package BarchDif.stm_like_api.v1;
 
-import "validate/validate.proto";
-import "google/api/annotations.proto";
+//import "api/validate/validate.proto";
+import "api/google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/BarchDif/stm-like-api/pkg/stm-like-api;stm_like_api";
 
-// OmpTemplateApiService - Service for working with templates
-service OmpTemplateApiService {
-  // DescribeTemplateV1 - Describe a template
-  rpc DescribeTemplateV1(DescribeTemplateV1Request) returns (DescribeTemplateV1Response) {
-    option (google.api.http) = {
-      get: "/v1/templates/{template_id}"
-    };
-  }
+// StmLikeService - Service for working with stream likes
+service StmLikeService {
+  rpc CreateLike(CreateLikeRequest) returns (CreateLikeResponse);
+
+  //  // DescribeTemplateV1 - Describe a template
+  //  rpc DescribeTemplateV1(DescribeTemplateV1Request) returns (DescribeTemplateV1Response) {
+  //    option (google.api.http) = {
+  //      get: "/v1/templates/{template_id}"
+  //    };
+  //  }
 }
 
-message Template {
+message Like {
   uint64 id = 1;
-  uint64 foo = 2;
-  google.protobuf.Timestamp created = 3;
+  uint64 stream_id = 2;
+  string uuid = 3;
+  google.protobuf.Timestamp timestamp = 4;
 }
 
-message DescribeTemplateV1Request {
-  uint64 template_id = 1 [(validate.rules).uint64.gt = 0];
+message CreateLikeRequest {
+  Like like = 1;
 }
 
-message DescribeTemplateV1Response {
-  Template value = 1;
+message CreateLikeResponse {
+  uint64 id = 1;
 }
+
+//message Template {
+//  uint64 id = 1;
+//  uint64 foo = 2;
+//  google.protobuf.Timestamp created = 3;
+//}
+//
+//message DescribeTemplateV1Request {
+//  uint64 template_id = 1 [(validate.rules).uint64.gt = 0];
+//}
+//
+//message DescribeTemplateV1Response {
+//  Template value = 1;
+//}

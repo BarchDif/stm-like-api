@@ -59,7 +59,6 @@ func NewRetranslator(cfg Config) Retranslator {
 		events,
 		cfg.Pool)
 
-	// testCommit
 	if cfg.Pool == nil {
 		cfg.Pool = workerpool.New(cfg.WorkerCount)
 	}

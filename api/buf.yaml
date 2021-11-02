@@ -7,7 +7,8 @@
 # The only valid versions are "v1beta1", "v1".
 # This key is required.
 version: v1
-
+deps:
+  - buf.build/googleapis/googleapis
 # name is the module name.
 #name: buf.build/acme/weather
 
@@ -25,17 +26,17 @@ version: v1
 # omitted.
 build:
 
-  # excludes is the list of directories to exclude.
-  #
-  # These directories will not be built or checked. If a directory is excluded,
-  # buf treats the directory as if it does not exist.
-  #
-  # All directory paths in exclude must be relative to the directory of
-  # your buf.yaml. Only directories can be specified, and all specified
-  # directories must within the root directory.
-  #excludes:
-  #  - foo
-  #  - bar/baz
+# excludes is the list of directories to exclude.
+#
+# These directories will not be built or checked. If a directory is excluded,
+# buf treats the directory as if it does not exist.
+#
+# All directory paths in exclude must be relative to the directory of
+# your buf.yaml. Only directories can be specified, and all specified
+# directories must within the root directory.
+#excludes:
+#  - foo
+#  - bar/baz
 
 # lint contains the options for lint rules.
 lint:
