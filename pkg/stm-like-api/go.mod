@@ -1,4 +1,4 @@
-module github.com/ozonmp/omp-template-api/pkg/omp-template-api
+module github.com/BarchDif/stm-like-api/pkg/stm-like-api
 
 go 1.17
 

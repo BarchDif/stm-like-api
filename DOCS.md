@@ -12,6 +12,7 @@ For local assembly you need to perform
 $ make deps # Installation of dependencies
 $ make build # Build project
 ```
+
 ## Running
 
 ### For local development
@@ -26,15 +27,18 @@ $ docker-compose up -d
 
 ### Swagger UI
 
-The Swagger UI is an open source project to visually render documentation for an API defined with the OpenAPI (Swagger) Specification
+The Swagger UI is an open source project to visually render documentation for an API defined with the OpenAPI (Swagger)
+Specification
 
 - http://localhost:8081
 
 ### Grafana:
 
 - http://localhost:3000
-- - login `admin`
-- - password `MYPASSWORT`
+-
+    - login `admin`
+-
+    - password `MYPASSWORT`
 
 ### gRPC:
 
@@ -78,9 +82,12 @@ Metrics GRPC Server
 Service condition and its information
 
 - http://localhost:8000
-- - `/live`- Layed whether the server is running
-- - `/ready` - Is it ready to accept requests
-- - `/version` - Version and assembly information
+-
+    - `/live`- Layed whether the server is running
+-
+    - `/ready` - Is it ready to accept requests
+-
+    - `/version` - Version and assembly information
 
 ### Prometheus:
 
@@ -90,13 +97,16 @@ Prometheus is an open-source systems monitoring and alerting toolkit
 
 ### Kafka
 
-Apache Kafka is an open-source distributed event streaming platform used by thousands of companies for high-performance data pipelines, streaming analytics, data integration, and mission-critical applications.
+Apache Kafka is an open-source distributed event streaming platform used by thousands of companies for high-performance
+data pipelines, streaming analytics, data integration, and mission-critical applications.
 
 - http://localhost:9094
 
 ### Kafka UI
 
-UI for Apache Kafka is a simple tool that makes your data flows observable, helps find and troubleshoot issues faster and deliver optimal performance. Its lightweight dashboard makes it easy to track key metrics of your Kafka clusters - Brokers, Topics, Partitions, Production, and Consumption.
+UI for Apache Kafka is a simple tool that makes your data flows observable, helps find and troubleshoot issues faster
+and deliver optimal performance. Its lightweight dashboard makes it easy to track key metrics of your Kafka clusters -
+Brokers, Topics, Partitions, Production, and Consumption.
 
 - http://localhost:9001
 
@@ -108,15 +118,20 @@ Monitor and troubleshoot transactions in complex distributed systems.
 
 ### Graylog
 
-Graylog is a leading centralized log management solution for capturing, storing, and enabling real-time analysis of terabytes of machine data.
+Graylog is a leading centralized log management solution for capturing, storing, and enabling real-time analysis of
+terabytes of machine data.
 
 - http://localhost:9000
-- - login `admin`
-- - password `admin`
+-
+    - login `admin`
+-
+    - password `admin`
 
 ### PostgreSQL
 
-For the convenience of working with the database, you can use the [pgcli](https://github.com/dbcli/pgcli) utility. Migrations are rolled out when the service starts. migrations are located in the **./migrations** directory and are created using the [goose](https://github.com/pressly/goose) tool.
+For the convenience of working with the database, you can use the [pgcli](https://github.com/dbcli/pgcli) utility.
+Migrations are rolled out when the service starts. migrations are located in the **./migrations** directory and are
+created using the [goose](https://github.com/pressly/goose) tool.
 
 ```sh
 $ pgcli "postgresql://docker:docker@localhost:5432/omp_template_api"
@@ -129,13 +144,12 @@ $ python -m venv .venv
 $ . .venv/bin/activate
 $ make deps
 $ make generate
-$ cd pypkg/omp-template-api
+$ cd pypkg/stm-like-api
 $ python setup.py install
 $ cd ../..
 $ docker-compose up -d
 $ python scripts/grpc_client.py
 ```
-
 
 ### Thanks
 

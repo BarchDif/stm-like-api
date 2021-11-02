@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/ozonmp/omp-template-api/internal/repo"
+	"github.com/BarchDif/stm-like-api/internal/repo"
 
-	pb "github.com/ozonmp/omp-template-api/pkg/omp-template-api"
+	pb "github.com/BarchDif/stm-like-api/pkg/stm-like-api"
 )
 
 var (
@@ -27,7 +27,7 @@ type templateAPI struct {
 	repo repo.Repo
 }
 
-// NewTemplateAPI returns api of omp-template-api service
+// NewTemplateAPI returns api of stm-like-api service
 func NewTemplateAPI(r repo.Repo) pb.OmpTemplateApiServiceServer {
 	return &templateAPI{repo: r}
 }

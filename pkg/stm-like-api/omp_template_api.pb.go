@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.27.1
 // 	protoc        v3.18.1
-// source: ozonmp/omp_template_api/v1/omp_template_api.proto
+// source: ozonmp/stm_like_api/v1/stm_like_api.proto
 
-package omp_template_api
+package stm_like_api
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
@@ -244,16 +244,16 @@ func file_ozonmp_omp_template_api_v1_omp_template_api_proto_rawDescGZIP() []byte
 
 var file_ozonmp_omp_template_api_v1_omp_template_api_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_ozonmp_omp_template_api_v1_omp_template_api_proto_goTypes = []interface{}{
-	(*Template)(nil),                   // 0: ozonmp.omp_template_api.v1.Template
-	(*DescribeTemplateV1Request)(nil),  // 1: ozonmp.omp_template_api.v1.DescribeTemplateV1Request
-	(*DescribeTemplateV1Response)(nil), // 2: ozonmp.omp_template_api.v1.DescribeTemplateV1Response
+	(*Template)(nil),                   // 0: ozonmp.stm_like_api.v1.Template
+	(*DescribeTemplateV1Request)(nil),  // 1: ozonmp.stm_like_api.v1.DescribeTemplateV1Request
+	(*DescribeTemplateV1Response)(nil), // 2: ozonmp.stm_like_api.v1.DescribeTemplateV1Response
 	(*timestamppb.Timestamp)(nil),      // 3: google.protobuf.Timestamp
 }
 var file_ozonmp_omp_template_api_v1_omp_template_api_proto_depIdxs = []int32{
-	3, // 0: ozonmp.omp_template_api.v1.Template.created:type_name -> google.protobuf.Timestamp
-	0, // 1: ozonmp.omp_template_api.v1.DescribeTemplateV1Response.value:type_name -> ozonmp.omp_template_api.v1.Template
-	1, // 2: ozonmp.omp_template_api.v1.OmpTemplateApiService.DescribeTemplateV1:input_type -> ozonmp.omp_template_api.v1.DescribeTemplateV1Request
-	2, // 3: ozonmp.omp_template_api.v1.OmpTemplateApiService.DescribeTemplateV1:output_type -> ozonmp.omp_template_api.v1.DescribeTemplateV1Response
+	3, // 0: ozonmp.stm_like_api.v1.Template.created:type_name -> google.protobuf.Timestamp
+	0, // 1: ozonmp.stm_like_api.v1.DescribeTemplateV1Response.value:type_name -> ozonmp.stm_like_api.v1.Template
+	1, // 2: ozonmp.stm_like_api.v1.OmpTemplateApiService.DescribeTemplateV1:input_type -> ozonmp.stm_like_api.v1.DescribeTemplateV1Request
+	2, // 3: ozonmp.stm_like_api.v1.OmpTemplateApiService.DescribeTemplateV1:output_type -> ozonmp.stm_like_api.v1.DescribeTemplateV1Response
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
